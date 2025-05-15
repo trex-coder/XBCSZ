@@ -64,12 +64,7 @@ jobs:
       run: |
         echo "$FIREBASE_KEY" > creds.json
         pip install firebase-admin
-        if [ -f "upload_url.py" ]; then
-          python3 upload_url.py
-        else
-          echo "upload_url.py not found!"
-          exit 1
-        fi
+        python3 upload_url.py
 
     - name: Loop output of URL
       run: |
@@ -84,6 +79,9 @@ jobs:
     if: ${{ cancelled() }}
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
     - name: Set up Python and credentials
       run: |
         echo "${{ secrets.FIREBASE_CREDENTIALS_JSON }}" > creds.json
@@ -92,19 +90,4 @@ jobs:
     - name: Set deploy_status to 0 on cancel
       env:
         UID: ${{ github.actor }}
-      run: |
-        echo "
-import firebase_admin
-from firebase_admin import credentials, db
-import os
-
-cred = credentials.Certificate('creds.json')
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://loudwave-54180-default-rtdb.asia-southeast1.firebasedatabase.app/'
-})
-
-user_ref = db.reference(f\"users/{os.environ['UID']}\")
-user_ref.update({\"deploy_status\": 0})
-print(\"Set deploy_status to 0 due to cancellation.\")
-" > cancel_cleanup.py
-        python3 cancel_cleanup.py
+      run: python3 cancel_cleanup.py
